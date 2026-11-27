@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Inquiry Tracker</title>
+<link rel="stylesheet" href="style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+</head>
+<body>
+<header class="topbar no-print">
+  <div class="brand">
+    <span class="logo" aria-hidden="true">IQ</span>
+    <div>
+      <strong>Inquiry Tracker</strong>
+      <small>Ekspor &amp; Institusi</small>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button class="tab active" data-tab="dashboard">Dashboard</button>
+    <button class="tab" data-tab="inquiry">Daftar Inquiry</button>
+    <button class="tab" data-tab="input">Input Inquiry</button>
+    <button class="tab" data-tab="produk">Master Produk</button>
+  </nav>
+  <button id="themeBtn" class="btn ghost sm" title="Ganti tema">Tema</button>
+</header>
+
+<main class="no-print">
+  <!-- ============ DASHBOARD ============ -->
+  <section id="tab-dashboard" class="panel active">
+    <div class="filters">
+      <label>Channel
+        <select id="fChannel"><option value="">Semua</option><option>Ekspor</option><option>Institusi</option></select>
+      </label>
+      <label>Produk <select id="fProduk"><option value="">Semua</option></select></label>
+      <label>Status <select id="fStatus"><option value="">Semua</option></select></label>
+      <span class="muted" id="fInfo"></span>
+    </div>
+
+    <div class="kpis" id="kpis"></div>
+
+    <div class="grid">
+      <div class="card full" id="actionCard">
+        <div class="card-h"><h3>Butuh tindakan</h3><span class="muted">urut prioritas · klik untuk detail</span></div>
+        <div id="actionList"></div>
+      </div>
+      <div class="card"><div class="card-h"><h3>Inquiry per channel</h3><button class="link" data-table="cChannel">Tabel</button></div><div class="chart-box sm"><canvas id="cChannel"></canvas></div><div class="tbl-alt" id="t-cChannel"></div></div>
+      <div class="card"><div class="card-h"><h3>Sumber inquiry</h3><button class="link" data-table="cSumber">Tabel</button></div><div class="chart-box sm"><canvas id="cSumber"></canvas></div><div class="tbl-alt" id="t-cSumber"></div></div>
+      <div class="card span2"><div class="card-h"><h3>Nilai penawaran per produk (Rp)</h3><button class="link" data-table="cNilai">Tabel</button></div><div class="chart-box"><canvas id="cNilai"></canvas></div><div class="tbl-alt" id="t-cNilai"></div></div>
+      <div class="card span2"><div class="card-h"><h3>Cek MOQ per produk (jumlah inquiry)</h3><button class="link" data-table="cMoq">Tabel</button></div><div class="chart-box"><canvas id="cMoq"></canvas></div><div class="tbl-alt" id="t-cMoq"></div></div>
+      <div class="card"><div class="card-h"><h3>Pipeline status</h3><button class="link" data-table="cStatus">Tabel</button></div><div class="chart-box sm"><canvas id="cStatus"></canvas></div><div class="tbl-alt" id="t-cStatus"></div></div>
+      <div class="card"><div class="card-h"><h3>Nilai ekspor per negara (USD)</h3><button class="link" data-table="cNegara">Tabel</button></div><div class="chart-box sm"><canvas id="cNegara"></canvas></div><div class="tbl-alt" id="t-cNegara"></div></div>
+      <div class="card span2"><div class="card-h"><h3>Tren inquiry masuk per hari</h3><button class="link" data-table="cTren">Tabel</button></div><div class="chart-box"><canvas id="cTren"></canvas></div><div class="tbl-alt" id="t-cTren"></div></div>
+      <div class="card span2"><div class="card-h"><h3>Top buyer</h3><span class="muted">repeat buyer = peluang kontrak rutin</span></div><div id="topBuyer"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ DAFTAR INQUIRY ============ -->
+  <section id="tab-inquiry" class="panel">
+    <div class="filters">
+      <input id="q" type="search" placeholder="Cari buyer, produk, kota, catatan…">
+      <label>Channel <select id="lChannel"><option value="">Semua</option><option>Ekspor</option><option>Institusi</option></select></label>
+      <label>Status <select id="lStatus"><option value="">Semua</option></select></label>
+      <label>MOQ <select id="lMoq"><option value="">Semua</option><option value="ok">Lolos</option><option value="no">Di bawah MOQ</option></select></label>
+      <label>Urut <select id="lSort"><option value="prio">Prioritas</option><option value="tgl">Tanggal terbaru</option><option value="nilai">Nilai terbesar</option></select></label>
+      <button class="btn ghost sm" id="exportBtn">Ekspor CSV</button>
+    </div>
+    <div class="card flush"><div class="table-wrap"><table class="tbl" id="inqTable"></table></div></div>
+  </section>
+
+  <!-- ============ INPUT ============ -->
+  <section id="tab-input" class="panel">
+    <div class="grid two">
+      <div class="card">
+        <div class="card-h"><h3>Smart Paste</h3><span class="badge info">asisten</span></div>
+        <p class="muted small">Tempel isi email / chat WhatsApp. Sistem mengenali buyer, produk, qty, negara/kota, channel, sumber &amp; permintaan khusus, lalu mengisi form. Selalu periksa hasilnya sebelum simpan.</p>
+        <textarea id="pasteText" rows="6" placeholder="Contoh: Assalamualaikum, kami dari Oman Fresh Imports, Muscat. Mau order Pop Ice 150 karton, butuh kirim sebelum akhir bulan. Minta harga ya."></textarea>
+        <div class="row"><button class="btn" id="parseBtn">Isi form otomatis</button><span id="parseInfo" class="muted small"></span></div>
+
+        <hr>
+        <form id="inqForm" autocomplete="off">
+          <div class="form-grid">
+            <label>Tanggal masuk<input type="date" name="tgl" required></label>
+            <label>Nama buyer<input name="buyer" list="buyerList" required></label>
+            <label>Kota / Negara<input name="kota" required></label>
+            <label>Channel<select name="channel"><option>Ekspor</option><option>Institusi</option></select></label>
+            <label>Produk<select name="produk" id="formProduk"></select></label>
+            <label>Qty (karton)<input type="number" name="qty" min="1" required></label>
+            <label>Sumber<select name="sumber"><option>Email</option><option>WhatsApp</option><option>Pameran</option><option>Telepon</option><option>Lainnya</option></select></label>
+            <label>Diskon tambahan (%)<input type="number" name="diskonManual" min="0" max="30" step="0.5" value="0"></label>
+            <label class="full">Catatan<textarea name="catatan" rows="2"></textarea></label>
+          </div>
+          <datalist id="buyerList"></datalist>
+          <div class="row"><button class="btn" type="submit">Simpan inquiry</button><button class="btn ghost" type="reset">Kosongkan</button></div>
+        </form>
+      </div>
+
+      <div class="col">
+        <div class="card sticky">
+          <div class="card-h"><h3>Pratinjau penawaran</h3></div>
+          <div id="preview"></div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Impor massal dari spreadsheet</h3></div>
+          <p class="muted small">Salin baris dari Excel/Google Sheets (boleh dengan header): Tgl Masuk, Nama Buyer, Kota/Negara, Channel, Produk, Qty, Sumber, Catatan.</p>
+          <textarea id="importText" rows="4" placeholder="24/11/2026	Hotel Grand Pelita	Bandung	Institusi	Kola-Kola	30	Email	"></textarea>
+          <div class="row"><button class="btn ghost" id="importBtn">Impor</button><span id="importInfo" class="muted small"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ MASTER PRODUK ============ -->
+  <section id="tab-produk" class="panel">
+    <div class="note warn"><strong>Catatan:</strong> harga &amp; MOQ di bawah adalah <em>nilai contoh</em>. Ganti dengan daftar harga resmi 5 produk, lalu klik Simpan — semua penawaran &amp; cek MOQ langsung terhitung ulang.</div>
+    <div class="card flush"><div class="table-wrap"><table class="tbl" id="produkTable"></table></div></div>
+    <div class="row"><button class="btn ghost sm" id="addProduk">+ Tambah produk</button></div>
+
+    <div class="card">
+      <div class="card-h"><h3>Aturan penawaran</h3></div>
+      <div class="form-grid" id="settingsForm">
+        <label>Kurs USD → Rp<input type="number" id="sKurs" min="1"></label>
+        <label>PPN institusi (%)<input type="number" id="sPpn" min="0" step="0.5"></label>
+        <label>Follow-up maks (hari)<input type="number" id="sFollow" min="1"></label>
+        <label>Masa berlaku penawaran (hari)<input type="number" id="sValid" min="1"></label>
+        <label class="full">Tier diskon volume (format qty:diskon%, pisahkan koma)<input id="sTier" placeholder="500:3, 1000:5"></label>
+      </div>
+      <p class="muted small">Ekspor: harga FOB, PPN 0%, ditampilkan dalam USD. Institusi: harga Rupiah + PPN.</p>
+    </div>
+    <div class="row">
+      <button class="btn" id="saveProduk">Simpan</button>
+      <button class="btn danger ghost" id="resetAll">Reset ke data awal</button>
+    </div>
+  </section>
+</main>
+
+<!-- detail modal -->
+<div class="modal no-print" id="modal" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true">
+    <button class="close" id="closeModal" aria-label="Tutup">×</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<div id="printArea" class="print-only"></div>
+<div id="toast" class="toast" hidden></div>
+
+<script src="app.js"></script>
+</body>
+</html>
